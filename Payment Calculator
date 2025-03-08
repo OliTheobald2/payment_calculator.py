@@ -1,0 +1,61 @@
+import streamlit as st
+import pandas as pd
+
+def calculate_payments(total_fee, oli_commission_pct, mileage, travel_recipient):
+    travel_rate = 0.25  # Cost per mile
+    
+    # Calculations
+    savings = total_fee * 0.10  # 10% into savings
+    oli_commission = total_fee * (oli_commission_pct / 100)  # Oli's commission
+    travel_expense = mileage * 2 * travel_rate  # Round trip travel expense
+    remaining_fee = total_fee - (savings + oli_commission + travel_expense)
+    num_performers = 3  # Assuming three performers (Charly, Chloe, Hannah)
+    individual_payment = remaining_fee / num_performers
+    
+    # Assigning payments
+    payments = {
+        "Charly": individual_payment,
+        "Chloe": individual_payment,
+        "Hannah": individual_payment,
+    }
+    payments[travel_recipient] += travel_expense  # Adding travel expenses to the recipient
+    
+    return savings, oli_commission, travel_expense, payments
+
+# Streamlit UI
+st.title("Gig Payment Calculator")
+
+total_fee = st.number_input("Total Gig Fee (£)", min_value=0.0, step=10.0)
+oli_commission_pct = st.number_input("Oli's Commission (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.5)
+mileage = st.number_input("Mileage (one way)", min_value=0.0, step=1.0)
+travel_recipient = st.selectbox("Who gets the travel payment?", ["Charly", "Chloe", "Hannah"])
+
+if st.button("Calculate Payments"):
+    savings, oli_commission, travel_expense, payments = calculate_payments(total_fee, oli_commission_pct, mileage, travel_recipient)
+    
+    # Display results
+    st.write(f"**Savings (10%)**: £{savings:.2f}")
+    st.write(f"**Oli's Commission ({oli_commission_pct}%)**: £{oli_commission:.2f}")
+    st.write(f"**Total Travel Expense**: £{travel_expense:.2f}")
+    
+    st.subheader("Performer Payments")
+    for performer, amount in payments.items():
+        st.write(f"**{performer}**: £{amount:.2f}")
+    
+    # Generate downloadable report
+    df = pd.DataFrame([{
+        "Total Fee": total_fee,
+        "Savings (10%)": savings,
+        "Oli's Commission": oli_commission,
+        "Total Travel Expense": travel_expense,
+        "Charly's Payment": payments["Charly"],
+        "Chloe's Payment": payments["Chloe"],
+        "Hannah's Payment": payments["Hannah"],
+    }])
+    
+    st.download_button(
+        label="Download Payment Report",
+        data=df.to_csv(index=False),
+        file_name="gig_payment_report.csv",
+        mime="text/csv"
+    )
